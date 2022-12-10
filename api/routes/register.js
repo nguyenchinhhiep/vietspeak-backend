@@ -1,7 +1,7 @@
 const User = require("../../models/user");
 const bcrypt = require("bcryptjs");
-const authConfig = require("./../../configs/auth");
 const jwt = require("jsonwebtoken");
+const config = process.env;
 
 module.exports = (router) => {
   router.post("/register", async (req, res) => {
@@ -10,7 +10,7 @@ module.exports = (router) => {
       const { email, password } = req.body;
 
       // Check if email already exists
-      const existingEmail = await User.find({ email });
+      const existingEmail = await User.findOne({ email });
       if (existingEmail) {
         res.status(409);
         return res.json({
@@ -22,7 +22,7 @@ module.exports = (router) => {
       // Hash password
       const encryptedPassword = await bcrypt.hash(
         password,
-        authConfig.saltRound
+        config.SALT_ROUND || 10
       );
 
       // Create user
@@ -37,10 +37,10 @@ module.exports = (router) => {
           userId: newUser._id,
           email: newUser.email,
         },
-        process.env.ACCESS_TOKEN_SECRET || "",
+        config.ACCESS_TOKEN_SECRET || "",
         {
           algorithm: "HS256",
-          expiresIn: process.env.ACCESS_TOKEN_LIFE,
+          expiresIn: config.ACCESS_TOKEN_LIFE,
         }
       );
 
@@ -50,10 +50,10 @@ module.exports = (router) => {
         {
           email: newUser.email,
         },
-        process.env.REFRESH_TOKEN_SECRET || "",
+        config.REFRESH_TOKEN_SECRET || "",
         {
           algorithm: "HS256",
-          expiresIn: process.env.REFRESH_TOKEN_LIFE,
+          expiresIn: config.REFRESH_TOKEN_LIFE,
         }
       );
 
