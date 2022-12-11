@@ -1,7 +1,7 @@
 const User = require("./../../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const config = process.env;
+const configs = process.env;
 
 module.exports = (router) => {
   router.post("/login", async (req, res) => {
@@ -27,10 +27,10 @@ module.exports = (router) => {
             userId: user._id,
             email: user.email,
           },
-          config.ACCESS_TOKEN_SECRET || "",
+          configs.ACCESS_TOKEN_SECRET || "",
           {
             algorithm: "HS256",
-            expiresIn: config.ACCESS_TOKEN_LIFE,
+            expiresIn: configs.ACCESS_TOKEN_LIFE,
           }
         );
 
@@ -40,10 +40,10 @@ module.exports = (router) => {
           {
             email: user.email,
           },
-          config.REFRESH_TOKEN_SECRET || "",
+          configs.REFRESH_TOKEN_SECRET || "",
           {
             algorithm: "HS256",
-            expiresIn: config.REFRESH_TOKEN_LIFE,
+            expiresIn: configs.REFRESH_TOKEN_LIFE,
           }
         );
 

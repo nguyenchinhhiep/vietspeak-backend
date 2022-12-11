@@ -1,7 +1,7 @@
 const User = require("../../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const config = process.env;
+const configs = process.env;
 
 module.exports = (router) => {
   router.post("/register", async (req, res) => {
@@ -22,7 +22,7 @@ module.exports = (router) => {
       // Hash password
       const encryptedPassword = await bcrypt.hash(
         password,
-        config.SALT_ROUND || 10
+        configs.SALT_ROUND || 10
       );
 
       // Create user
@@ -37,10 +37,10 @@ module.exports = (router) => {
           userId: newUser._id,
           email: newUser.email,
         },
-        config.ACCESS_TOKEN_SECRET || "",
+        configs.ACCESS_TOKEN_SECRET || "",
         {
           algorithm: "HS256",
-          expiresIn: config.ACCESS_TOKEN_LIFE,
+          expiresIn: configs.ACCESS_TOKEN_LIFE,
         }
       );
 
@@ -50,10 +50,10 @@ module.exports = (router) => {
         {
           email: newUser.email,
         },
-        config.REFRESH_TOKEN_SECRET || "",
+        configs.REFRESH_TOKEN_SECRET || "",
         {
           algorithm: "HS256",
-          expiresIn: config.REFRESH_TOKEN_LIFE,
+          expiresIn: configs.REFRESH_TOKEN_LIFE,
         }
       );
 

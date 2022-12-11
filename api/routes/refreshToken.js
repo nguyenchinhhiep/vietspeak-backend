@@ -1,7 +1,7 @@
-const User = require("./../../models/user");
+const User = require("../../models/user");
 const jwt = require("jsonwebtoken");
-const { verifyRefreshToken } = require("./../../helpers/auth");
-const config = process.env;
+const { verifyRefreshToken } = require("../../helpers/auth");
+const configs = process.env;
 
 module.exports = (router) => {
   router.post("/refresh-token", async (req, res) => {
@@ -37,10 +37,10 @@ module.exports = (router) => {
             userId: user._id,
             email: user.email,
           },
-          config.ACCESS_TOKEN_SECRET || "",
+          configs.ACCESS_TOKEN_SECRET || "",
           {
             algorithm: "HS256",
-            expiresIn: config.ACCESS_TOKEN_LIFE,
+            expiresIn: configs.ACCESS_TOKEN_LIFE,
           }
         );
 

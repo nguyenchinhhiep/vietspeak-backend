@@ -4,11 +4,11 @@ const api = require("./api");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
 const cors = require("cors");
-const config = process.env;
+const configs = process.env;
 
 dotenv.config();
 
-app.set("port", config.API_PORT || 1996);
+app.set("port", configs.API_PORT || 1996);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -32,7 +32,7 @@ const mongoose = require("mongoose");
 
 mongoose.set("strictQuery", false);
 
-mongoose.connect(config.MONGO_URL || "");
+mongoose.connect(configs.MONGO_URL || "");
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Connection error:"));
