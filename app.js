@@ -32,7 +32,7 @@ const mongoose = require("mongoose");
 
 mongoose.set("strictQuery", false);
 
-mongoose.connect(configs.MONGO_URL || "");
+mongoose.connect(String(configs.MONGO_URL));
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Connection error:"));

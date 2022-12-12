@@ -9,6 +9,14 @@ module.exports = (router) => {
       // Get user input
       const { email, password } = req.body;
 
+      // Check user input
+      if (!email || !password) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email and password are required",
+        });
+      }
+
       // Check if email already exists
       const existingEmail = await User.findOne({ email });
       if (existingEmail) {
@@ -22,7 +30,7 @@ module.exports = (router) => {
       // Hash password
       const encryptedPassword = await bcrypt.hash(
         password,
-        configs.SALT_ROUND || 10
+        Number(configs.SALT_ROUND)
       );
 
       // Create user
@@ -37,7 +45,7 @@ module.exports = (router) => {
           userId: newUser._id,
           email: newUser.email,
         },
-        configs.ACCESS_TOKEN_SECRET || "",
+        String(configs.ACCESS_TOKEN_SECRET),
         {
           algorithm: "HS256",
           expiresIn: configs.ACCESS_TOKEN_LIFE,
@@ -50,7 +58,7 @@ module.exports = (router) => {
         {
           email: newUser.email,
         },
-        configs.REFRESH_TOKEN_SECRET || "",
+        String(configs.REFRESH_TOKEN_SECRET),
         {
           algorithm: "HS256",
           expiresIn: configs.REFRESH_TOKEN_LIFE,

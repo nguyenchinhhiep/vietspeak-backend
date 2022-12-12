@@ -1,6 +1,6 @@
 const Token = require("../../models/token");
 const User = require("../../models/user");
-const sendEmail = require("./../../helpers/email/sendPasswordResetEmail");
+const sendEmail = require("./../../email/sendPasswordResetEmail");
 const bcrypt = require("bcryptjs");
 const configs = process.env;
 
@@ -13,7 +13,7 @@ module.exports = (router) => {
       if (!userId || !token || !password) {
         return res.status(400).json({
           status: "error",
-          message: "Invalid userId or token or password",
+          message: "Token and userId and password are required",
         });
       }
 
@@ -40,7 +40,7 @@ module.exports = (router) => {
       // Hash password
       const encryptedPassword = await bcrypt.hash(
         password,
-        10
+        Number(configs.SALT_ROUND)
       );
 
       // Update user
@@ -62,20 +62,23 @@ module.exports = (router) => {
         });
       }
 
+      const link = `${configs.CLIENT_URL}/login`;
+
       sendEmail(
         user.email,
-        "Password Reset Successfully",
+        "Password Changed Successfully",
         {
-          name: user.firstName + " " + user.lastName,
+          link: link,
         },
         "./templates/resetPassword.handlebars"
-      );
+      ).then(async (_) => {
+        // Delete the old token
+        await passwordResetToken.deleteOne();
 
-      await passwordResetToken.deleteOne();
-
-      return res.status(200).send({
-        status: "success",
-        message: "Update password successfully",
+        return res.status(200).send({
+          status: "success",
+          message: "Update password successfully",
+        });
       });
     } catch (err) {
       console.log(err);

@@ -37,7 +37,7 @@ module.exports = (router) => {
             userId: user._id,
             email: user.email,
           },
-          configs.ACCESS_TOKEN_SECRET || "",
+          String(configs.ACCESS_TOKEN_SECRET),
           {
             algorithm: "HS256",
             expiresIn: configs.ACCESS_TOKEN_LIFE,
