@@ -52,8 +52,6 @@ module.exports = (router) => {
         }
       );
 
-      newUser.accessToken = accessToken;
-
       const refreshToken = jwt.sign(
         {
           email: newUser.email,
@@ -65,14 +63,20 @@ module.exports = (router) => {
         }
       );
 
-      newUser.refreshToken = refreshToken;
+      const userData = {
+        ...newUser.toJSON(),
+        accessToken,
+        refreshToken,
+      };
+
+      delete userData["password"];
 
       res.status(201).json({
         status: "success",
-        data: newUser,
+        data: userData,
       });
     } catch (err) {
-      console.log(err);
+      res.status(400).json({ status: "error", message: err.message });
     }
   });
 };

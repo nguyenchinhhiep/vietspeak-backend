@@ -7,5 +7,6 @@ require("./routes/forgotPassword")(router);
 require("./routes/refreshToken")(router);
 require("./routes/passwordReset")(router);
 require("./routes/checkExistingEmail")(router);
+require("./routes/userProfile")(router);
 
 module.exports = router;

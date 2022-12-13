@@ -4,9 +4,12 @@ const api = require("./api");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
 const cors = require("cors");
+const { connectDB } = require("./config/db");
 const configs = process.env;
 
 dotenv.config();
+
+connectDB();
 
 app.set("port", configs.API_PORT || 1996);
 
@@ -18,7 +21,9 @@ app.use(cors());
 app.use("/api", api);
 app.use(express.static("static"));
 
-app.use(morgan("dev"));
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
 app.use(function (req, res) {
   res.status(404).json({
@@ -27,20 +32,6 @@ app.use(function (req, res) {
   });
 });
 
-//  MongoDB connection
-const mongoose = require("mongoose");
-
-mongoose.set("strictQuery", false);
-
-mongoose.connect(String(configs.MONGO_URL));
-
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "Connection error:"));
-
-db.once("open", () => {
-  console.log("Connected to MongoDB");
-
-  app.listen(app.get("port"), () => {
-    console.log(`API Server is listening on port ${app.get("port")}`);
-  });
+app.listen(app.get("port"), () => {
+  console.log(`API Server is listening on port ${app.get("port")}`);
 });

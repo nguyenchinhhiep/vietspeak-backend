@@ -1,12 +1,15 @@
 const User = require("../../models/user");
+const isAuthenticated = require("./../../middleware/auth");
 
 module.exports = (router) => {
-  router.post("/check-existing-email", async (req, res) => {
+  router.get("/profile", isAuthenticated, async (req, res) => {
     try {
-      const { email } = req.body;
-      if (!email) {
+      const { userId, email } = req.user;
+
+      if (!userId || !email) {
         return res.status(400).json({
-          message: "Email is required",
+          status: "error",
+          message: "Invalid token",
         });
       }
 
