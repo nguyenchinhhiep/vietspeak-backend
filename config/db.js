@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
-const configs = process.env;
+const config = process.env;
 
 mongoose.set("strictQuery", false);
 
 const connectDB = async () => {
   try {
-    const connection = await mongoose.connect(String(configs.MONGO_URL));
+    const connection = await mongoose.connect(String(config.MONGO_URL));
     console.log(`MongoDB Connected: ${connection.connection.host}`);
   } catch (err) {
     console.error(`Error: ${err.message}`);

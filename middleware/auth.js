@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const configs = process.env;
+const config = process.env;
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.get("Authorization");
@@ -13,7 +13,7 @@ module.exports = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, configs.ACCESS_TOKEN_SECRET || "");
+    const decoded = jwt.verify(token, config.ACCESS_TOKEN_SECRET || "");
     req.user = decoded;
   } catch (err) {
     return res.status(401).json({

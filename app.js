@@ -5,13 +5,13 @@ const dotenv = require("dotenv");
 const morgan = require("morgan");
 const cors = require("cors");
 const { connectDB } = require("./config/db");
-const configs = process.env;
+const config = process.env;
 
 dotenv.config();
 
 connectDB();
 
-app.set("port", configs.API_PORT || 1996);
+app.set("port", config.API_PORT || 1996);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

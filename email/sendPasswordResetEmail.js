@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const handlebars = require("handlebars");
 const fs = require("fs");
 const path = require("path");
-const configs = process.env;
+const config = process.env;
 
 const sendEmail = (email, subject, payload, template) => {
   return new Promise((resolve, reject) => {
@@ -11,8 +11,8 @@ const sendEmail = (email, subject, payload, template) => {
       const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-          user: configs.EMAIL_USERNAME,
-          pass: configs.EMAIL_PASSWORD,
+          user: config.EMAIL_USERNAME,
+          pass: config.EMAIL_PASSWORD,
         },
       });
 
@@ -22,7 +22,7 @@ const sendEmail = (email, subject, payload, template) => {
 
       const options = () => {
         return {
-          from: `Vietspeak Support <${configs.FROM_EMAIL}>`,
+          from: `Vietspeak Support <${config.FROM_EMAIL}>`,
           to: email,
           subject: subject,
           html: compiledTemplate(payload),

@@ -1,12 +1,11 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const tutorSchema = new mongoose.Schema(
+const tutorSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: "User",
     },
     firstName: { type: String, trim: true },
     lastName: { type: String, trim: true },
@@ -17,6 +16,19 @@ const tutorSchema = new mongoose.Schema(
       type: String,
       enum: ["English"],
     },
+    teachingJobs: {
+      type: [String],
+    },
+    languages: [
+      {
+        language: {
+          type: String,
+        },
+        fluency: {
+          type: String,
+        },
+      },
+    ],
     teachingExperience: {
       type: String,
       enum: [
@@ -27,14 +39,23 @@ const tutorSchema = new mongoose.Schema(
         "More than 2 years",
       ],
     },
+    teachingCertificates: {
+      type: [String],
+    },
     haveExperienceTeachingOnline: {
       type: Boolean,
     },
     reasonHere: {
       type: String,
+      trim: true,
     },
     introduction: {
       type: String,
+      trim: true,
+    },
+    videoIntroduction: {
+      type: String,
+      trim: true,
     },
     heardFrom: {
       type: String,
