@@ -7,6 +7,7 @@ const getUserProfile = async (req, res) => {
     const { email } = req.user;
 
     const user = await User.findOne({ email: email.toLowerCase() })
+      .select("-password")
       .populate("tutorProfile")
       .populate("studentProfile");
 
@@ -18,10 +19,14 @@ const getUserProfile = async (req, res) => {
     }
 
     const userProfile = {
-      ...user.toJSON(),
+      email: user.email,
+      status: user.status,
+      userType: user.userType,
+      name: user.name,
+      avatar: user.avatar,
+      tutorProfile: user.tutorProfile,
+      studentProfile: user.studentProfile,
     };
-
-    delete userProfile["password"];
 
     return res.status(200).json({
       status: "success",
@@ -38,6 +43,7 @@ const updateUserProfile = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
 
+    // If user not found
     if (!user) {
       return res.status(400).json({
         status: "success",
@@ -45,14 +51,29 @@ const updateUserProfile = async (req, res) => {
       });
     }
 
-    const userType = user.userType;
-    const userProfile = req.body || {};
-    const { tutorProfile, studentProfile } = userProfile;
+    // Retrieve user payload
+    const userProfilePayload = req.body || {};
 
+    // Update user profile
+    for (const key in userProfilePayload) {
+      if (key !== "tutorProfile" && key !== "studentProfile") {
+        user[key] = userProfilePayload[key];
+      }
+    }
+
+    const { tutorProfile, studentProfile } = userProfilePayload;
+
+    const userType = userProfilePayload.userType;
+
+    // If user is tutor
     if (userType === "Tutor") {
       const tutor = await Tutor.findOne({ userId: userId });
       if (tutor) {
         // Update tutor profile
+        for (const key in tutorProfile) {
+          tutor[key] = tutorProfile[key];
+        }
+        await tutor.save();
       } else {
         // Create new tutor profile
         const newTutor = new Tutor({
@@ -60,31 +81,38 @@ const updateUserProfile = async (req, res) => {
           ...tutorProfile,
         });
 
-        const createdTutor = await newTutor.save();
+        await newTutor.save();
       }
     }
 
+    // If user is student
     if (userType === "Student") {
       const student = await Student.findOne({ userId: userId });
       if (student) {
+        for (const key in studentProfile) {
+          student[key] = studentProfile[key];
+        }
+
+        await student.save();
       } else {
         // Create new student profile
-        const newStudent = new Tutor({
+        const newStudent = new Student({
           userId,
           ...studentProfile,
         });
 
         const createdStudent = await newStudent.save();
+        user.studentProfile = createdStudent._id;
       }
     }
 
-    const userData = {
-      ...user.toJSON(),
-      ...userProfile,
-    };
+    // Save user
+    await user.save();
 
-    delete userData["tutorProfile"];
-    delete userData["studentProfile"];
+    return res.status(200).json({
+      status: "success",
+      message: "User updated",
+    });
   } catch (err) {
     res.status(400).json({ status: "error", message: err.message });
   }

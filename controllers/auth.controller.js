@@ -49,12 +49,14 @@ const loginHandler = async (req, res) => {
       );
 
       const userData = {
-        ...user.toJSON(),
+        email: user.email,
+        status: user.status,
+        userType: user.userType,
+        name: user.name,
+        avatar: user.avatar,
         accessToken,
         refreshToken,
       };
-
-      delete userData["password"];
 
       res.status(200).json({
         status: "success",
@@ -131,12 +133,14 @@ const registerHandler = async (req, res) => {
     );
 
     const userData = {
-      ...newUser.toJSON(),
+      email: newUser.email,
+      status: newUser.status,
+      userType: newUser.userType,
+      name: newUser.name,
+      avatar: newUser.avatar,
       accessToken,
       refreshToken,
     };
-
-    delete userData["password"];
 
     res.status(201).json({
       status: "success",
@@ -318,7 +322,11 @@ const refreshTokenHandler = async (req, res) => {
       );
 
       const userData = {
-        ...user.toJSON(),
+        email: user.email,
+        status: user.status,
+        userType: user.userType,
+        name: user.name,
+        avatar: user.avatar,
         accessToken,
         refreshToken,
       };

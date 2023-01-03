@@ -1,6 +1,12 @@
 const isAuthenticated = require("../../middleware/auth");
-const { getUserProfile } = require("../../controllers/user.controller");
+const {
+  getUserProfile,
+  updateUserProfile,
+} = require("../../controllers/user.controller");
 
 module.exports = (router) => {
-  router.get("/profile", isAuthenticated, getUserProfile);
+  router
+    .route("/profile")
+    .get(isAuthenticated, getUserProfile)
+    .put(isAuthenticated, updateUserProfile);
 };
