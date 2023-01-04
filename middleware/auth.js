@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const config = process.env;
 
-module.exports = async (req, res, next) => {
+const isAuthenticated = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -22,4 +22,20 @@ module.exports = async (req, res, next) => {
     });
   }
   return next();
+};
+
+const isAdmin = async (req, res, next) => {
+  if (req.user && req.user.userType === "Admin") {
+    next();
+  } else {
+    res.status(401).json({
+      status: "error",
+      message: "Not authorized as an admin",
+    });
+  }
+};
+
+module.exports = {
+  isAuthenticated,
+  isAdmin,
 };
