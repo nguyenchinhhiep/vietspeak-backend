@@ -71,6 +71,20 @@ const updateUserProfile = async (req, res) => {
     // Retrieve user payload
     const userProfilePayload = req.body || {};
 
+    // If user update email
+    if (userProfilePayload.email) {
+      const existingUser = await User.findOne({
+        email: userProfilePayload.email.toLowerCase(),
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email already exists",
+        });
+      }
+    }
+
     // Update user profile
     for (const key in userProfilePayload) {
       if (key !== "tutorProfile" && key !== "studentProfile") {
@@ -345,6 +359,20 @@ const updateUser = async (req, res) => {
 
     // Retrieve user payload
     const userProfilePayload = req.body || {};
+
+    // If user update email
+    if (userProfilePayload.email) {
+      const existingUser = await User.findOne({
+        email: userProfilePayload.email.toLowerCase(),
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email already exists",
+        });
+      }
+    }
 
     // Update user profile
     for (const key in userProfilePayload) {
