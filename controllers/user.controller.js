@@ -2,6 +2,23 @@ const User = require("../models/user");
 const Tutor = require("../models/tutor");
 const Student = require("../models/student");
 
+function getName(user) {
+  let name = "";
+  if (user.userType === "Admin") {
+    name = user.firstName + " " + user.lastName;
+  }
+
+  if (user.userType === "Student") {
+    return user.studentProfile.firstName + " " + user.studentProfile.lastName;
+  }
+
+  if (user.userType === "Tutor") {
+    return user.tutorProfile.firstName + " " + user.tutorProfile.lastName;
+  }
+
+  return name.trim();
+}
+
 const getUserProfile = async (req, res) => {
   try {
     const { email } = req.user;
@@ -22,7 +39,7 @@ const getUserProfile = async (req, res) => {
       email: user.email,
       status: user.status,
       userType: user.userType,
-      name: user.name,
+      name: getName(user),
       avatar: user.avatar,
       tutorProfile: user.tutorProfile,
       studentProfile: user.studentProfile,

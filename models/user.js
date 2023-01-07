@@ -11,15 +11,11 @@ const userSchema = new Schema(
     },
     status: {
       type: String,
-      enum: [
-        "Active",
-        "Inactive",
-        "Pending",
-        "Reviewing",
-        "Blocked"
-      ],
+      enum: ["Active", "Inactive", "Pending", "Reviewing", "Blocked"],
       default: "Pending",
     },
+    firstName: { type: String },
+    lastName: { type: String },
     name: { type: String },
     avatar: { type: String },
     tutorProfile: {

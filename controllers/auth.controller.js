@@ -7,6 +7,23 @@ const sendEmail = require("../email/sendPasswordResetEmail");
 const { verifyRefreshToken } = require("../helpers/auth");
 const config = process.env;
 
+function getName(user) {
+  let name = "";
+  if (user.userType === "Admin") {
+    name = user.firstName + " " + user.lastName;
+  }
+
+  if (user.userType === "Student") {
+    return user.studentProfile.firstName + " " + user.studentProfile.lastName;
+  }
+
+  if (user.userType === "Tutor") {
+    return user.tutorProfile.firstName + " " + user.tutorProfile.lastName;
+  }
+
+  return name.trim();
+}
+
 const loginHandler = async (req, res) => {
   try {
     // Get user input
@@ -21,7 +38,9 @@ const loginHandler = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email})
+      .populate("tutorProfile")
+      .populate("studentProfile");
 
     if (user && (await bcrypt.compare(password, user.password || ""))) {
       // Create tokens
@@ -52,7 +71,7 @@ const loginHandler = async (req, res) => {
         email: user.email,
         status: user.status,
         userType: user.userType,
-        name: user.name,
+        name: getName(user),
         avatar: user.avatar,
         accessToken,
         refreshToken,
