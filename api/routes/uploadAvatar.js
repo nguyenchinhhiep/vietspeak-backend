@@ -137,7 +137,22 @@ module.exports = (router) => {
         });
       }
 
-      // Remove avatar
+      // If no avatar
+      if (!user.avatar) {
+        res
+          .status(400)
+          .json({ status: "error", message: "User has no avatar" });
+      }
+
+      // Delete avatar file
+      const avatarFileName = user.avatar?.split("/avatars/")[1];
+
+      const avatarDir = path.join(__dirname, "../../uploads/avatars/");
+
+      if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
+        fs.unlinkSync(avatarDir + avatarFileName);
+      }
+
       user.avatar = "";
 
       // Save

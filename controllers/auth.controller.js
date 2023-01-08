@@ -38,7 +38,7 @@ const loginHandler = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email: email})
+    const user = await User.findOne({ email: email.toLowerCase() })
       .populate("tutorProfile")
       .populate("studentProfile");
 
@@ -112,6 +112,14 @@ const registerHandler = async (req, res) => {
       return res.json({
         status: "error",
         message: "Email already exists",
+      });
+    }
+
+    // Validate password length
+    if (password?.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 6 characters long",
       });
     }
 
@@ -258,6 +266,16 @@ const passwordResetHandler = async (req, res) => {
       Number(config.SALT_ROUND)
     );
 
+    // Find user
+    const user = await User.findById({ _id: userId });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "User does not exist",
+      });
+    }
+
     // Update user
     await User.updateOne(
       {
@@ -267,15 +285,6 @@ const passwordResetHandler = async (req, res) => {
         $set: { password: encryptedPassword },
       }
     );
-
-    const user = await User.findById({ _id: userId });
-
-    if (!user) {
-      return res.status(400).json({
-        status: "error",
-        message: "User does not exist",
-      });
-    }
 
     const link = `${config.CLIENT_URL}/login`;
 
@@ -292,7 +301,7 @@ const passwordResetHandler = async (req, res) => {
 
       return res.status(200).send({
         status: "success",
-        message: "Update password successfully",
+        message: "Password updated",
       });
     });
   } catch (err) {
@@ -324,7 +333,7 @@ const refreshTokenHandler = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (user) {
       // Create token

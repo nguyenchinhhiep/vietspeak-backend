@@ -1,5 +1,8 @@
 const path = require("path");
 const multer = require("multer");
+const User = require("../../models/user");
+const { isAuthenticated } = require("../../middleware/auth");
+const fs = require("fs");
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -31,7 +34,7 @@ const upload = multer({
     checkFileType(file, cb);
   },
   limits: {
-    fileSize: 1024 * 1024 * 32,
+    fileSize: 1024 * 1024 * 10,
   },
 });
 
@@ -39,9 +42,22 @@ module.exports = (router) => {
   router.post(
     "/upload-certificates",
     upload.array("certificates", 10),
-    (req, res) => {
-      const files = req?.files || [];
-      res.send(`/${files.map((file) => file.path)}`);
+    async (req, res) => {
+      const { userId, email } = req.user;
+
+      console.log(req.files);
+
+      if (!email || !userId) {
+        return res.status(400).json({
+          status: "error",
+          message: "Invalid token",
+        });
+      }
+
+      // Get current user
+      const user = await User.findOne({ email });
+
+      //
     }
   );
 };

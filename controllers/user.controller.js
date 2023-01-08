@@ -1,6 +1,9 @@
 const User = require("../models/user");
 const Tutor = require("../models/tutor");
 const Student = require("../models/student");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const config = process.env;
 
 function getName(user) {
   let name = "";
@@ -19,11 +22,78 @@ function getName(user) {
   return name.trim();
 }
 
+const changePasswordHandler = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const { email } = req.user;
+
+    // Check user input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: "error",
+        message: "Current password and new password are required",
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "User does not exist",
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(
+      currentPassword,
+      user.password || ""
+    );
+
+    if (!isValidPassword) {
+      return res.status(400).json({
+        status: "error",
+        message: "Incorrect current password",
+      });
+    }
+
+    // Validate password length
+    if (newPassword?.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Hash password
+    const encryptedPassword = await bcrypt.hash(
+      newPassword,
+      Number(config.SALT_ROUND)
+    );
+
+    // Update password
+    user.password = encryptedPassword;
+
+    // Save user
+    await user.save();
+
+    return res.status(200).send({
+      status: "success",
+      message: "Password updated",
+    });
+  } catch (err) {
+    res.status(400).json({ status: "error", message: err.message });
+  }
+};
+
 const getUserProfile = async (req, res) => {
   try {
     const { email } = req.user;
 
-    const user = await User.findOne({ email: email.toLowerCase() })
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    })
       .select("-password")
       .populate("tutorProfile")
       .populate("studentProfile");
@@ -58,7 +128,9 @@ const updateUserProfile = async (req, res) => {
   try {
     const { userId, email } = req.user;
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
 
     // If user not found
     if (!user) {
@@ -87,17 +159,23 @@ const updateUserProfile = async (req, res) => {
 
     // Update user profile
     for (const key in userProfilePayload) {
-      if (key !== "tutorProfile" && key !== "studentProfile") {
+      if (
+        key !== "tutorProfile" &&
+        key !== "studentProfile" &&
+        key !== "userType"
+      ) {
         user[key] = userProfilePayload[key];
       }
     }
 
     const { tutorProfile, studentProfile } = userProfilePayload;
 
-    const userType = userProfilePayload.userType;
+    const userType = userProfilePayload.userType || user.userType;
 
     // If user is tutor
     if (userType === "Tutor") {
+      user.userType = "Tutor";
+
       const tutor = await Tutor.findOne({ userId: userId });
       if (tutor) {
         // Update tutor profile
@@ -118,6 +196,7 @@ const updateUserProfile = async (req, res) => {
 
     // If user is student
     if (userType === "Student") {
+      user.userType = "Student";
       const student = await Student.findOne({ userId: userId });
       if (student) {
         for (const key in studentProfile) {
@@ -439,6 +518,7 @@ const updateUser = async (req, res) => {
 };
 
 module.exports = {
+  changePasswordHandler,
   getUserProfile,
   updateUserProfile,
   getUsers,

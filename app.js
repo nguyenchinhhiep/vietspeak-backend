@@ -28,7 +28,7 @@ if (process.env.NODE_ENV === "development") {
 app.use(function (req, res) {
   res.status(404).json({
     status: "error",
-    message: "Not Found",
+    message: "Not found",
   });
 });
 
