@@ -17,24 +17,17 @@ const tutorSchema = new Schema(
     teachingLanguage: {
       type: String,
       enum: ["English"],
-      // require: true,
     },
     teachingJobs: {
       type: [String],
-      // require: true,
     },
     languages: {
       type: [
         {
-          language: {
-            type: String,
-          },
-          fluency: {
-            type: String,
-          },
+          language: String,
+          fluency: String,
         },
       ],
-      // require: true,
     },
     teachingExperience: {
       type: String,
@@ -45,10 +38,17 @@ const tutorSchema = new Schema(
         "1 - 2 years",
         "More than 2 years",
       ],
-      // require: true,
     },
     teachingCertificates: {
-      type: [String],
+      type: [
+        {
+          _id: Schema.Types.ObjectId,
+          originname: String,
+          filename: String,
+          size: Number,
+          url: String,
+        },
+      ],
       // require: true,
     },
     haveExperienceTeachingOnline: {
@@ -58,12 +58,10 @@ const tutorSchema = new Schema(
     reasonHere: {
       type: String,
       trim: true,
-      // require: true,
     },
     introduction: {
       type: String,
       trim: true,
-      // require: true,
     },
     videoIntroduction: {
       type: String,
@@ -72,7 +70,6 @@ const tutorSchema = new Schema(
     heardFrom: {
       type: String,
       enum: ["Web Search", "Social Media", "Friend / Family", "Other"],
-      // require: true,
     },
   },
   {

@@ -10,15 +10,19 @@ const config = process.env;
 function getName(user) {
   let name = "";
   if (user.userType === "Admin") {
-    name = user.firstName + " " + user.lastName;
+    name = user.firstName ? user.firstName + " " + user.lastName : "";
   }
 
   if (user.userType === "Student") {
-    return user.studentProfile.firstName + " " + user.studentProfile.lastName;
+    name = user.studentProfile?.firstName
+      ? user.studentProfile.firstName + " " + user.studentProfile?.lastName
+      : "";
   }
 
   if (user.userType === "Tutor") {
-    return user.tutorProfile.firstName + " " + user.tutorProfile.lastName;
+    name = user.tutorProfile?.firstName
+      ? user.tutorProfile?.firstName + " " + user.tutorProfile?.lastName
+      : "";
   }
 
   return name.trim();
@@ -353,7 +357,7 @@ const refreshTokenHandler = async (req, res) => {
         email: user.email,
         status: user.status,
         userType: user.userType,
-        name: user.name,
+        name: getName(user),
         avatar: user.avatar,
         accessToken,
         refreshToken,

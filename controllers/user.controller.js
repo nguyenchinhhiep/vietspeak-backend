@@ -2,24 +2,48 @@ const User = require("../models/user");
 const Tutor = require("../models/tutor");
 const Student = require("../models/student");
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
 const config = process.env;
 
 function getName(user) {
   let name = "";
   if (user.userType === "Admin") {
-    name = user.firstName + " " + user.lastName;
+    name = user.firstName ? user.firstName + " " + user.lastName : "";
   }
 
   if (user.userType === "Student") {
-    return user.studentProfile.firstName + " " + user.studentProfile.lastName;
+    name = user.studentProfile?.firstName
+      ? user.studentProfile.firstName + " " + user.studentProfile?.lastName
+      : "";
   }
 
   if (user.userType === "Tutor") {
-    return user.tutorProfile.firstName + " " + user.tutorProfile.lastName;
+    name = user.tutorProfile?.firstName
+      ? user.tutorProfile?.firstName + " " + user.tutorProfile?.lastName
+      : "";
   }
 
   return name.trim();
+}
+
+function isCompletedProfile(profile = {}, includedKeys = []) {
+  let isCompleted = true;
+
+  for (const key in profile) {
+    if (!includedKeys.includes(key)) {
+      continue;
+    }
+
+    if (
+      profile[key] == null ||
+      profile[key] == "" ||
+      profile[key].length === 0
+    ) {
+      isCompleted = false;
+      break;
+    }
+  }
+
+  return isCompleted;
 }
 
 const changePasswordHandler = async (req, res) => {
@@ -176,43 +200,123 @@ const updateUserProfile = async (req, res) => {
     if (userType === "Tutor") {
       user.userType = "Tutor";
 
+      // Find student profile
       const tutor = await Tutor.findOne({ userId: userId });
       if (tutor) {
         // Update tutor profile
         for (const key in tutorProfile) {
           tutor[key] = tutorProfile[key];
         }
+        // Save
         await tutor.save();
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(tutor, [
+          "userId",
+          "firstName",
+          "lastName",
+          "dob",
+          "teachingLanguage",
+          "teachingJobs",
+          "languages",
+          "teachingExperience",
+          "teachingCertificates",
+          "haveExperienceTeachingOnline",
+          "reasonHere",
+          "introduction",
+          "heardFrom",
+        ]);
+        if (isCompleted) {
+          user.status = "Active";
+        } else {
+          user.status = "Pending";
+        }
       } else {
         // Create new tutor profile
         const newTutor = new Tutor({
           userId,
           ...tutorProfile,
         });
+        // Save
+        const createdTutor = await newTutor.save();
+        user.tutorProfile = createdTutor._id;
 
-        await newTutor.save();
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(createdTutor, [
+          "userId",
+          "firstName",
+          "lastName",
+          "dob",
+          "teachingLanguage",
+          "teachingJobs",
+          "languages",
+          "teachingExperience",
+          "teachingCertificates",
+          "haveExperienceTeachingOnline",
+          "reasonHere",
+          "introduction",
+          "heardFrom",
+        ]);
+        if (isCompleted) {
+          user.status = "Active";
+        } else {
+          user.status = "Pending";
+        }
       }
     }
 
     // If user is student
     if (userType === "Student") {
       user.userType = "Student";
+
+      // Find student profile
       const student = await Student.findOne({ userId: userId });
       if (student) {
         for (const key in studentProfile) {
           student[key] = studentProfile[key];
         }
-
+        // Save
         await student.save();
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(student, [
+          "userId",
+          "firstName",
+          "lastName",
+          "learningLanguage",
+          "currentLevel",
+          "heardFrom",
+        ]);
+
+        if (isCompleted) {
+          user.status = "Active";
+        } else {
+          user.status = "Pending";
+        }
       } else {
         // Create new student profile
         const newStudent = new Student({
           userId,
           ...studentProfile,
         });
-
+        // Save
         const createdStudent = await newStudent.save();
         user.studentProfile = createdStudent._id;
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(createdStudent, [
+          "userId",
+          "firstName",
+          "lastName",
+          "learningLanguage",
+          "currentLevel",
+          "heardFrom",
+        ]);
+        if (isCompleted) {
+          user.status = "Active";
+        } else {
+          user.status = "Pending";
+        }
       }
     }
 
