@@ -42,8 +42,7 @@ const tutorSchema = new Schema(
     teachingCertificates: {
       type: [
         {
-          _id: Schema.Types.ObjectId,
-          originname: String,
+          originalname: String,
           filename: String,
           size: Number,
           url: String,

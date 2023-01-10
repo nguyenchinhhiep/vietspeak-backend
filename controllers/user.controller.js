@@ -226,10 +226,8 @@ const updateUserProfile = async (req, res) => {
           "introduction",
           "heardFrom",
         ]);
-        if (isCompleted) {
-          user.status = "Active";
-        } else {
-          user.status = "Pending";
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Reviewing";
         }
       } else {
         // Create new tutor profile
@@ -257,10 +255,8 @@ const updateUserProfile = async (req, res) => {
           "introduction",
           "heardFrom",
         ]);
-        if (isCompleted) {
-          user.status = "Active";
-        } else {
-          user.status = "Pending";
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Reviewing";
         }
       }
     }
@@ -288,10 +284,8 @@ const updateUserProfile = async (req, res) => {
           "heardFrom",
         ]);
 
-        if (isCompleted) {
+        if (isCompleted && user.status === "Pending") {
           user.status = "Active";
-        } else {
-          user.status = "Pending";
         }
       } else {
         // Create new student profile
@@ -312,10 +306,8 @@ const updateUserProfile = async (req, res) => {
           "currentLevel",
           "heardFrom",
         ]);
-        if (isCompleted) {
+        if (isCompleted && user.status === "Pending") {
           user.status = "Active";
-        } else {
-          user.status = "Pending";
         }
       }
     }
@@ -325,6 +317,10 @@ const updateUserProfile = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
+      data: {
+        status: user.status,
+        userType: user.userType,
+      },
       message: "User updated",
     });
   } catch (err) {

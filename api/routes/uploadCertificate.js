@@ -97,7 +97,7 @@ module.exports = (router) => {
 
       teachingCertificates = teachingCertificates.map((file) => {
         return {
-          originname: file.originalname,
+          originalname: file.originalname,
           filename: file.filename,
           size: file.size,
           url: `${req.protocol}://${req.get("host")}/api/uploads/certificates/${
@@ -106,7 +106,7 @@ module.exports = (router) => {
         };
       });
 
-      //  Save certificates
+      //  Update certificates
       tutor.teachingCertificates = teachingCertificates;
 
       // Save
@@ -115,6 +115,7 @@ module.exports = (router) => {
       return res.status(200).json({
         status: "success",
         message: "Certificates uploaded",
+        data: tutor.teachingCertificates,
       });
     }
   );
@@ -135,7 +136,7 @@ module.exports = (router) => {
   });
 
   // Delete certificate
-  router.delete("/certificate/:id", isAuthenticated, async (req, res) => {
+  router.delete("/certificates/:id", isAuthenticated, async (req, res) => {
     try {
       const { userId, email } = req.user;
 
@@ -178,17 +179,9 @@ module.exports = (router) => {
       // Certificate id
       const certificateId = req.params.id;
 
-      // Delete certificate
-      tutor.teachingCertificates = tutor.teachingCertificates.filter(
-        (certificate) => certificate._id !== certificateId
-      );
-
-      // Save
-      await tutor.save();
-
       // Get delete certificate
       const deleteCertificate = tutor.teachingCertificates.find(
-        (certificate) => certificate._id === certificateId
+        (certificate) => certificate["_id"] == certificateId
       );
 
       if (!deleteCertificate) {
@@ -206,6 +199,14 @@ module.exports = (router) => {
       if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
         fs.unlinkSync(certificateDir + deleteCertificate.filename);
       }
+
+      // Delete certificate
+      tutor.teachingCertificates = tutor.teachingCertificates.filter(
+        (certificate) => certificate["_id"] != certificateId
+      );
+
+      // Save
+      await tutor.save();
 
       return res.status(200).json({
         status: "success",
