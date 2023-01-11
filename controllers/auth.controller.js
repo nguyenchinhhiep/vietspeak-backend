@@ -52,6 +52,7 @@ const loginHandler = async (req, res) => {
         {
           userId: user._id,
           email: user.email,
+          userType: user.userType,
         },
         String(config.ACCESS_TOKEN_SECRET),
         {
@@ -144,6 +145,7 @@ const registerHandler = async (req, res) => {
       {
         userId: newUser._id,
         email: newUser.email,
+        userType: newUser.userType,
       },
       String(config.ACCESS_TOKEN_SECRET),
       {
@@ -345,6 +347,7 @@ const refreshTokenHandler = async (req, res) => {
         {
           userId: user._id,
           email: user.email,
+          userType: user.userType,
         },
         String(config.ACCESS_TOKEN_SECRET),
         {

@@ -134,6 +134,8 @@ const getUserProfile = async (req, res) => {
       status: user.status,
       userType: user.userType,
       name: getName(user),
+      firstName: user.firstName,
+      lastName: user.lastName,
       avatar: user.avatar,
       tutorProfile: user.tutorProfile,
       studentProfile: user.studentProfile,
@@ -168,7 +170,7 @@ const updateUserProfile = async (req, res) => {
     const userProfilePayload = req.body || {};
 
     // If user update email
-    if (userProfilePayload.email) {
+    if (userProfilePayload.email && userProfilePayload.email != email) {
       const existingUser = await User.findOne({
         email: userProfilePayload.email.toLowerCase(),
       });
@@ -259,6 +261,9 @@ const updateUserProfile = async (req, res) => {
           user.status = "Reviewing";
         }
       }
+
+      user.firstName = tutorProfile.firstName;
+      user.lastName = tutorProfile.lastName;
     }
 
     // If user is student
@@ -310,6 +315,9 @@ const updateUserProfile = async (req, res) => {
           user.status = "Active";
         }
       }
+
+      user.firstName = studentProfile.firstName;
+      user.lastName = studentProfile.lastName;
     }
 
     // Save user
@@ -334,11 +342,22 @@ const getUsers = async (req, res) => {
     const page = Number(req.query.pageNumber) || 1;
     const userType = req.query.userType
       ? {
-          userType: {
-            $and: [{ $ne: "Admin" }, { $eq: req.query.userType }],
-          },
+          $and: [
+            {
+              userType: {
+                $ne: "Admin",
+              },
+            },
+            {
+              userType: { $eq: req.query.userType },
+            },
+          ],
         }
-      : {};
+      : {
+          userType: {
+            $ne: "Admin",
+          },
+        };
     const userStatus = req.query.userStatus
       ? {
           status: {
@@ -378,6 +397,7 @@ const getUsers = async (req, res) => {
       ...userStatus,
     });
     const users = await User.find({ ...filter, ...userType, ...userStatus })
+      .select("-password")
       .limit(pageSize)
       .skip(pageSize * (page - 1));
 
@@ -385,8 +405,10 @@ const getUsers = async (req, res) => {
       status: "success",
       data: {
         users,
-        page,
-        pages: Math.ceil(count / pageSize),
+        currentPage: page,
+        pageSize,
+        totalPages: Math.ceil(count / pageSize),
+        totalItems: count,
       },
     });
   } catch (err) {
