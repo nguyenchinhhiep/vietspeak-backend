@@ -257,13 +257,14 @@ const updateUserProfile = async (req, res) => {
           "introduction",
           "heardFrom",
         ]);
+
         if (isCompleted && user.status === "Pending") {
           user.status = "Reviewing";
         }
       }
 
-      user.firstName = tutorProfile.firstName;
-      user.lastName = tutorProfile.lastName;
+      user.firstName = tutor?.firstName;
+      user.lastName = tutor?.lastName;
     }
 
     // If user is student
@@ -316,8 +317,8 @@ const updateUserProfile = async (req, res) => {
         }
       }
 
-      user.firstName = studentProfile.firstName;
-      user.lastName = studentProfile.lastName;
+      user.firstName = student?.firstName;
+      user.lastName = student?.lastName;
     }
 
     // Save user
@@ -450,11 +451,20 @@ const blockUser = async (req, res) => {
         .json({ status: "error", message: "User not found" });
     }
 
-    user.status = "Blocked";
+    if (!["Blocked", "Active"].includes(user.status)) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid request" });
+    }
+
+    user.status = user.status === "Active" ? "Blocked" : "Active";
 
     await user.save();
 
-    res.status(200).json({ status: "success", message: "User blocked" });
+    res.status(200).json({
+      status: "success",
+      message: `User ${user.status.toLowerCase()}`,
+    });
   } catch (err) {
     res.status(400).json({ status: "error", message: err.message });
   }

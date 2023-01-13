@@ -6,6 +6,9 @@ const {
   getUserById,
   updateUser,
   deleteUser,
+  blockUser,
+  approveUser,
+  rejectUser,
 } = require("../../controllers/user.controller");
 
 module.exports = (router) => {
@@ -16,7 +19,10 @@ module.exports = (router) => {
 
   router
     .get("/users", isAuthenticated, isAdmin, getUsers)
-    .get("/:id", isAuthenticated, isAdmin, getUserById)
-    .put("/:id", isAuthenticated, isAdmin, updateUser)
-    .delete("/:id", isAuthenticated, isAdmin, deleteUser);
+    .get("/users/:id", isAuthenticated, isAdmin, getUserById)
+    .put("/users/:id", isAuthenticated, isAdmin, updateUser)
+    .delete("/users/:id", isAuthenticated, isAdmin, deleteUser)
+    .post("/users/block/:id", isAuthenticated, isAdmin, blockUser)
+    .post("/users/approve/:id", isAuthenticated, isAdmin, approveUser)
+    .post("/users/reject/:id", isAuthenticated, isAdmin, rejectUser);
 };
