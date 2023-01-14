@@ -66,7 +66,7 @@ const changePasswordHandler = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         status: "error",
-        message: "User does not exist",
+        message: "User not found",
       });
     }
 
@@ -231,6 +231,8 @@ const updateUserProfile = async (req, res) => {
         if (isCompleted && user.status === "Pending") {
           user.status = "Reviewing";
         }
+        user.firstName = tutor?.firstName;
+        user.lastName = tutor?.lastName;
       } else {
         // Create new tutor profile
         const newTutor = new Tutor({
@@ -261,10 +263,10 @@ const updateUserProfile = async (req, res) => {
         if (isCompleted && user.status === "Pending") {
           user.status = "Reviewing";
         }
-      }
 
-      user.firstName = tutor?.firstName;
-      user.lastName = tutor?.lastName;
+        user.firstName = createdTutor?.firstName;
+        user.lastName = createdTutor?.lastName;
+      }
     }
 
     // If user is student
@@ -293,6 +295,9 @@ const updateUserProfile = async (req, res) => {
         if (isCompleted && user.status === "Pending") {
           user.status = "Active";
         }
+
+        user.firstName = student?.firstName;
+        user.lastName = student?.lastName;
       } else {
         // Create new student profile
         const newStudent = new Student({
@@ -315,10 +320,10 @@ const updateUserProfile = async (req, res) => {
         if (isCompleted && user.status === "Pending") {
           user.status = "Active";
         }
-      }
 
-      user.firstName = student?.firstName;
-      user.lastName = student?.lastName;
+        user.firstName = createdStudent?.firstName;
+        user.lastName = createdStudent?.lastName;
+      }
     }
 
     // Save user
@@ -572,7 +577,7 @@ const updateUser = async (req, res) => {
     const userProfilePayload = req.body || {};
 
     // If user update email
-    if (userProfilePayload.email) {
+    if (userProfilePayload.email && userProfilePayload.email != user.email) {
       const existingUser = await User.findOne({
         email: userProfilePayload.email.toLowerCase(),
       });
@@ -587,54 +592,140 @@ const updateUser = async (req, res) => {
 
     // Update user profile
     for (const key in userProfilePayload) {
-      if (key !== "tutorProfile" && key !== "studentProfile") {
+      if (
+        key !== "tutorProfile" &&
+        key !== "studentProfile" &&
+        key !== "userType"
+      ) {
         user[key] = userProfilePayload[key];
       }
     }
 
     const { tutorProfile, studentProfile } = userProfilePayload;
 
-    const userType = userProfilePayload.userType;
+    const userType = userProfilePayload.userType || user.userType;
 
     // If user is tutor
     if (userType === "Tutor") {
-      const tutor = await Tutor.findOne({ userId: req.params.id });
+      user.userType = "Tutor";
+
+      // Find student profile
+      const tutor = await Tutor.findOne({ userId: user._id });
       if (tutor) {
         // Update tutor profile
         for (const key in tutorProfile) {
           tutor[key] = tutorProfile[key];
         }
+        // Save
         await tutor.save();
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(tutor, [
+          "userId",
+          "firstName",
+          "lastName",
+          "dob",
+          "teachingLanguage",
+          "teachingJobs",
+          "languages",
+          "teachingExperience",
+          "teachingCertificates",
+          "haveExperienceTeachingOnline",
+          "reasonHere",
+          "introduction",
+          "heardFrom",
+        ]);
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Reviewing";
+        }
       } else {
         // Create new tutor profile
         const newTutor = new Tutor({
-          userId: req.params.id,
+          userId: user._id,
           ...tutorProfile,
         });
+        // Save
+        const createdTutor = await newTutor.save();
+        user.tutorProfile = createdTutor._id;
 
-        await newTutor.save();
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(createdTutor, [
+          "userId",
+          "firstName",
+          "lastName",
+          "dob",
+          "teachingLanguage",
+          "teachingJobs",
+          "languages",
+          "teachingExperience",
+          "teachingCertificates",
+          "haveExperienceTeachingOnline",
+          "reasonHere",
+          "introduction",
+          "heardFrom",
+        ]);
+
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Reviewing";
+        }
       }
+
+      user.firstName = tutor?.firstName;
+      user.lastName = tutor?.lastName;
     }
 
     // If user is student
     if (userType === "Student") {
-      const student = await Student.findOne({ userId: req.params.id });
+      user.userType = "Student";
+
+      // Find student profile
+      const student = await Student.findOne({ userId: user._id });
       if (student) {
         for (const key in studentProfile) {
           student[key] = studentProfile[key];
         }
-
+        // Save
         await student.save();
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(student, [
+          "userId",
+          "firstName",
+          "lastName",
+          "learningLanguage",
+          "currentLevel",
+          "heardFrom",
+        ]);
+
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Active";
+        }
       } else {
         // Create new student profile
         const newStudent = new Student({
-          userId: req.params.id,
+          userId: user._id,
           ...studentProfile,
         });
-
+        // Save
         const createdStudent = await newStudent.save();
         user.studentProfile = createdStudent._id;
+
+        // Check is completed profile
+        const isCompleted = isCompletedProfile(createdStudent, [
+          "userId",
+          "firstName",
+          "lastName",
+          "learningLanguage",
+          "currentLevel",
+          "heardFrom",
+        ]);
+        if (isCompleted && user.status === "Pending") {
+          user.status = "Active";
+        }
       }
+
+      user.firstName = student?.firstName;
+      user.lastName = student?.lastName;
     }
 
     // Save user
@@ -642,7 +733,67 @@ const updateUser = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
+      data: {
+        status: user.status,
+        userType: user.userType,
+      },
       message: "User updated",
+    });
+  } catch (err) {
+    res.status(400).json({ status: "error", message: err.message });
+  }
+};
+
+// @desc    Change password user
+// @route   PUT /api/users/change-password/:id
+// @access  Private/Admin
+const changePasswordUserHandler = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    const userId = req.params.id;
+
+    // Check user input
+    if (!newPassword) {
+      return res.status(400).json({
+        status: "error",
+        message: "New password is required",
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ _id: userId });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Validate password length
+    if (newPassword?.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Hash password
+    const encryptedPassword = await bcrypt.hash(
+      newPassword,
+      Number(config.SALT_ROUND)
+    );
+
+    // Update password
+    user.password = encryptedPassword;
+
+    // Save user
+    await user.save();
+
+    return res.status(200).send({
+      status: "success",
+      message: "Password updated",
     });
   } catch (err) {
     res.status(400).json({ status: "error", message: err.message });
@@ -651,6 +802,7 @@ const updateUser = async (req, res) => {
 
 module.exports = {
   changePasswordHandler,
+  changePasswordUserHandler,
   getUserProfile,
   updateUserProfile,
   getUsers,

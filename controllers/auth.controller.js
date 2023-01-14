@@ -46,6 +46,15 @@ const loginHandler = async (req, res) => {
       .populate("tutorProfile")
       .populate("studentProfile");
 
+    // If the user is blocked
+    if (user?.status === "Blocked") {
+      return res.status(200).send({
+        status: "error",
+        message: "Your account has been blocked",
+        code: 403
+      });
+    }
+
     if (user && (await bcrypt.compare(password, user.password || ""))) {
       // Create tokens
       const accessToken = jwt.sign(
@@ -90,6 +99,7 @@ const loginHandler = async (req, res) => {
       res.status(200).send({
         status: "error",
         message: "Incorrect email or password",
+        code: 401
       });
     }
   } catch (err) {

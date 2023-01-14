@@ -1,7 +1,7 @@
 const path = require("path");
 const multer = require("multer");
 const User = require("../../models/user");
-const { isAuthenticated } = require("../../middleware/auth");
+const { isAuthenticated, isAdmin } = require("../../middleware/auth");
 const Tutor = require("../../models/tutor");
 const fs = require("fs");
 
@@ -40,6 +40,7 @@ const upload = multer({
 });
 
 module.exports = (router) => {
+  // Upload certificates
   router.post(
     "/certificates",
     isAuthenticated,
@@ -216,4 +217,164 @@ module.exports = (router) => {
       res.status(400).json({ status: "error", message: err.message });
     }
   });
+
+  // @desc    Upload user certificates
+  // @route   PUT /api/users/certificates/:id
+  // @access  Private/Admin
+  router.post(
+    "/users/certificates/:id",
+    isAuthenticated,
+    isAdmin,
+    upload.array("certificates", 10),
+    async (req, res) => {
+      // Get user id
+      const userId = req.params.id;
+
+      // Get current user
+      const user = await User.findOne({ _id: userId });
+
+      // Check user exists
+      if (!user) {
+        return res.status(404).json({
+          status: "error",
+          message: "User not found",
+        });
+      }
+
+      // Check user type
+      if (user.userType !== "Tutor") {
+        return res.status(401).json({
+          status: "error",
+          message: "Only tutor can upload certificates",
+        });
+      }
+
+      // Find tutor profile
+      const tutor = await Tutor.findOne({ userId: userId });
+
+      // Check tutor exists
+      if (!tutor) {
+        return res.status(404).json({
+          status: "error",
+          message: "Tutor not found",
+        });
+      }
+
+      // Get files
+      let teachingCertificates = req.files || [];
+
+      // Check files
+      if (!teachingCertificates || teachingCertificates.length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message: "No documents",
+        });
+      }
+
+      teachingCertificates = teachingCertificates.map((file) => {
+        return {
+          originalname: file.originalname,
+          filename: file.filename,
+          size: file.size,
+          url: `${req.protocol}://${req.get("host")}/api/uploads/certificates/${
+            file.filename
+          }`,
+        };
+      });
+
+      //  Update certificates
+      tutor.teachingCertificates = teachingCertificates;
+
+      // Save
+      await tutor.save();
+
+      return res.status(200).json({
+        status: "success",
+        message: "Certificates uploaded",
+        data: tutor.teachingCertificates,
+      });
+    }
+  );
+
+  // @desc    Delete user certificates
+  // @route   PUT /api/users/certificates/:id
+  // @access  Private/Admin
+  router.delete(
+    "/users/certificates/:userId/:id",
+    isAuthenticated,
+    isAdmin,
+    async (req, res) => {
+      try {
+        const { userId } = req.params;
+
+        // Get current user
+        const user = await User.findOne({ _id: userId });
+
+        if (!user) {
+          return res.status(404).json({
+            status: "error",
+            message: "User not found",
+          });
+        }
+
+        // Check user type
+        if (user.userType !== "Tutor") {
+          return res.status(401).json({
+            status: "error",
+            message: "User is not a tutor",
+          });
+        }
+
+        // Find student profile
+        const tutor = await Tutor.findOne({ userId: userId });
+
+        // Check tutor exists
+        if (!tutor) {
+          return res.status(404).json({
+            status: "error",
+            message: "Tutor not found",
+          });
+        }
+
+        // Certificate id
+        const certificateId = req.params.id;
+
+        // Get delete certificate
+        const deleteCertificate = tutor.teachingCertificates.find(
+          (certificate) => certificate["_id"] == certificateId
+        );
+
+        if (!deleteCertificate) {
+          return res.status(404).json({
+            status: "error",
+            message: "Certificate not found",
+          });
+        }
+
+        const certificateDir = path.join(
+          __dirname,
+          "../../uploads/certificates/"
+        );
+
+        if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
+          fs.unlinkSync(certificateDir + deleteCertificate.filename);
+        }
+
+        // Delete certificate
+        tutor.teachingCertificates = tutor.teachingCertificates.filter(
+          (certificate) => certificate["_id"] != certificateId
+        );
+
+        // Save
+        await tutor.save();
+
+        return res.status(200).json({
+          status: "success",
+          message: "Certificate removed",
+        });
+      } catch (err) {
+        res.status(400).json({ status: "error", message: err.message });
+      }
+    }
+  );
 };
