@@ -334,6 +334,10 @@ const updateUserProfile = async (req, res) => {
       data: {
         status: user.status,
         userType: user.userType,
+        name: user.firstName ? user.firstName + " " + user.lastName : "",
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar,
       },
       message: "User updated",
     });

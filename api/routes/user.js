@@ -10,13 +10,14 @@ const {
   approveUser,
   rejectUser,
   changePasswordUserHandler,
+  changePasswordHandler,
 } = require("../../controllers/user.controller");
 
 module.exports = (router) => {
   router
-    .route("/profile")
-    .get(isAuthenticated, getUserProfile)
-    .put(isAuthenticated, updateUserProfile);
+    .get("/profile", isAuthenticated, getUserProfile)
+    .put("/profile", isAuthenticated, updateUserProfile)
+    .post("/change-password", isAuthenticated, changePasswordHandler);
 
   router
     .get("/users", isAuthenticated, isAdmin, getUsers)
