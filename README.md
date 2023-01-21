@@ -1,2 +1,3 @@
 # Vietspeak Backend
-Run `npm start` to start the server on http://localhost:1996/
+
+Backend for Vietspeak project using Javascript, NodeJS (Express) and MongoDB to build APIs
