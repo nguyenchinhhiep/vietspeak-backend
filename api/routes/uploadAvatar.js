@@ -69,7 +69,7 @@ module.exports = (router) => {
         const extension = "png";
         const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
         const imagePath =
-          path.join(__dirname, "../../uploads/avatars/") + fileName;
+          path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
         fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
 
         // Get current user
@@ -147,7 +147,7 @@ module.exports = (router) => {
       // Delete avatar file
       const avatarFileName = user.avatar?.split("/avatars/")[1];
 
-      const avatarDir = path.join(__dirname, "../../uploads/avatars/");
+      const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
 
       if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
         fs.unlinkSync(avatarDir + avatarFileName);
@@ -193,7 +193,7 @@ module.exports = (router) => {
         const extension = "png";
         const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
         const imagePath =
-          path.join(__dirname, "../../uploads/avatars/") + fileName;
+          path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
         fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
 
         // Get current user
@@ -255,7 +255,7 @@ module.exports = (router) => {
         // Delete avatar file
         const avatarFileName = user.avatar?.split("/avatars/")[1];
 
-        const avatarDir = path.join(__dirname, "../../uploads/avatars/");
+        const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
 
         if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
           fs.unlinkSync(avatarDir + avatarFileName);
