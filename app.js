@@ -35,3 +35,5 @@ app.use(function (req, res) {
 app.listen(app.get("port"), () => {
   console.log(`API Server is listening on port ${app.get("port")}`);
 });
+
+module.exports = app;
