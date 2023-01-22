@@ -68,6 +68,7 @@ module.exports = (router) => {
         const imageData = base64ToArray[1];
         const extension = "png";
         const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
+
         const imagePath =
           path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
         fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
@@ -104,7 +105,7 @@ module.exports = (router) => {
   router.get("/uploads/avatars/:id", async (req, res) => {
     try {
       let filepath = path.join(
-        __dirname + `../../../uploads/avatars/${req.params.id}`
+        __dirname + `../../../tmp/uploads/avatars/${req.params.id}`
       );
 
       if (fs.existsSync(filepath)) {

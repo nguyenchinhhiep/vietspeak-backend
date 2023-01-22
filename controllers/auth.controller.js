@@ -51,7 +51,7 @@ const loginHandler = async (req, res) => {
       return res.status(200).send({
         status: "error",
         message: "Your account has been blocked",
-        code: 403
+        code: 403,
       });
     }
 
@@ -99,7 +99,7 @@ const loginHandler = async (req, res) => {
       res.status(200).send({
         status: "error",
         message: "Incorrect email or password",
-        code: 401
+        code: 401,
       });
     }
   } catch (err) {
@@ -342,7 +342,7 @@ const refreshTokenHandler = async (req, res) => {
     const isValid = verifyRefreshToken(email, refreshToken);
 
     if (!isValid) {
-      return res.status(401).json({
+      return res.status(200).json({
         status: "error",
         message: "Invalid token",
       });
