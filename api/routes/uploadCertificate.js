@@ -7,7 +7,7 @@ const fs = require("fs");
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, "uploads/certificates/");
+    cb(null, "tmp/uploads/certificates/");
   },
   filename(req, file, cb) {
     cb(
@@ -125,7 +125,7 @@ module.exports = (router) => {
   router.get("/uploads/certificates/:id", async (req, res) => {
     try {
       let filepath = path.join(
-        __dirname + `../../../uploads/certificates/${req.params.id}`
+        __dirname + `../../tmp/uploads/certificates/${req.params.id}`
       );
 
       if (fs.existsSync(filepath)) {
@@ -194,7 +194,7 @@ module.exports = (router) => {
 
       const certificateDir = path.join(
         __dirname,
-        "../../uploads/certificates/"
+        "../../tmp/uploads/certificates/"
       );
 
       if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
@@ -353,7 +353,7 @@ module.exports = (router) => {
 
         const certificateDir = path.join(
           __dirname,
-          "../../uploads/certificates/"
+          "../../tmp/uploads/certificates/"
         );
 
         if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
