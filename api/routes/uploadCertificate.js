@@ -5,6 +5,7 @@ const { isAuthenticated, isAdmin } = require("../../middleware/auth");
 const Tutor = require("../../models/tutor");
 const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
+const streamifier = require("streamifier");
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -31,8 +32,8 @@ function checkFileType(file, cb) {
 }
 
 const upload = multer({
-  // storage: multer.memoryStorage(),
-  storage,
+  storage: multer.memoryStorage(),
+  // storage,
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
@@ -101,9 +102,7 @@ module.exports = (router) => {
       let tutorTeachingCertificates = tutor.teachingCertificates || [];
 
       teachingCertificates.forEach((file) => {
-        // Upload avatar to cloudinary
-        cloudinary.uploader.upload(
-          file.path,
+        const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: "Certificates",
           },
@@ -141,6 +140,8 @@ module.exports = (router) => {
             });
           }
         );
+
+        streamifier.createReadStream(file.buffer).pipe(uploadStream);
       });
     }
   );
@@ -305,9 +306,7 @@ module.exports = (router) => {
       let tutorTeachingCertificates = tutor.teachingCertificates || [];
 
       teachingCertificates.forEach((file) => {
-        // Upload avatar to cloudinary
-        cloudinary.uploader.upload(
-          file.path,
+        const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: "Certificates",
           },
@@ -345,6 +344,8 @@ module.exports = (router) => {
             });
           }
         );
+
+        streamifier.createReadStream(file.buffer).pipe(uploadStream);
       });
     }
   );
