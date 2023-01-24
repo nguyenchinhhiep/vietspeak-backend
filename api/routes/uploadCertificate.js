@@ -121,6 +121,16 @@ module.exports = (router) => {
 
         let tutorTeachingCertificates = tutor.teachingCertificates || [];
 
+        if (
+          teachingCertificates.length > 2 ||
+          tutorTeachingCertificates.length + teachingCertificates.length > 2
+        ) {
+          return res.status(400).json({
+            status: "error",
+            message: "Only allow upload maximum 2 documents",
+          });
+        }
+
         for (const file of teachingCertificates) {
           const result = await uploadCertificateStream(file);
 
@@ -312,6 +322,16 @@ module.exports = (router) => {
           });
         }
         let tutorTeachingCertificates = tutor.teachingCertificates || [];
+
+        if (
+          teachingCertificates.length > 2 ||
+          tutorTeachingCertificates.length + teachingCertificates.length > 2
+        ) {
+          return res.status(400).json({
+            status: "error",
+            message: "Only allow upload maximum 2 documents",
+          });
+        }
 
         for (const file of teachingCertificates) {
           const result = await uploadCertificateStream(file);
