@@ -1,3 +1,3 @@
 # Vietspeak Backend
 
-Backend for Vietspeak project using Javascript, NodeJS (Express) and MongoDB to build APIs
+Backend for Vietspeak project using Javascript, NodeJS (Express), MongoDB, Nodemailer and Cloudinary to build APIs
