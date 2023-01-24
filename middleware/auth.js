@@ -6,7 +6,7 @@ const isAuthenticated = async (req, res, next) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (token == null) {
-    return res.sendStatus(401).json({
+    return res.status(401).json({
       status: "error",
       message: "A token is required for authentication",
     });

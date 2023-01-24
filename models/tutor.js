@@ -46,6 +46,7 @@ const tutorSchema = new Schema(
           filename: String,
           size: Number,
           url: String,
+          publicId: String
         },
       ],
       // require: true,

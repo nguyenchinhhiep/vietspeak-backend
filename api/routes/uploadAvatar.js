@@ -3,7 +3,7 @@ const multer = require("multer");
 const User = require("../../models/user");
 const { isAuthenticated, isAdmin } = require("../../middleware/auth");
 const fs = require("fs");
-const cloudinary = require("./../../config/cloudinary");
+const cloudinary = require("cloudinary").v2;
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -30,7 +30,7 @@ function checkFileType(file, cb) {
 }
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
@@ -65,20 +65,6 @@ module.exports = (router) => {
           });
         }
 
-        // const base64ToArray = base64Avatar.split(";base64,");
-        // const imageData = base64ToArray[1];
-        // const extension = "png";
-        // const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
-
-        // const imagePath =
-        //   path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
-        // fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
-
-        // Upload avatar to cloudinary
-        const uploadedAvatar = await cloudinary.upload(base64Avatar, "Avatar");
-
-        console.log(uploadedAvatar);
-
         // Get current user
         const user = await User.findOne({ email });
 
@@ -89,16 +75,42 @@ module.exports = (router) => {
           });
         }
 
-        // Update avatar
-        user.avatar = uploadedAvatar.url;
+        // const base64ToArray = base64Avatar.split(";base64,");
+        // const imageData = base64ToArray[1];
+        // const extension = "png";
+        // const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
 
-        // Save
-        await user.save();
+        // const imagePath =
+        //   path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
+        // fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
 
-        return res.status(200).json({
-          status: "success",
-          message: "Avatar uploaded",
-        });
+        // Upload avatar to cloudinary
+        cloudinary.uploader.upload(
+          base64Avatar,
+          {
+            folder: "Avatar",
+          },
+          async (err, result) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: "error", message: err.message });
+            }
+            // Update avatar
+            user.avatar = result?.url;
+
+            // Update avatar public id
+            user.avatarPublicId = result?.public_id;
+
+            // Save
+            await user.save();
+
+            return res.status(200).json({
+              status: "success",
+              message: "Avatar uploaded",
+            });
+          }
+        );
       } catch (err) {
         res.status(400).json({ status: "error", message: err.message });
       }
@@ -143,30 +155,41 @@ module.exports = (router) => {
       }
 
       // If no avatar
-      if (!user.avatar) {
+      if (!user.avatar || !user.avatarPublicId) {
         res
           .status(400)
           .json({ status: "error", message: "User has no avatar" });
       }
 
       // Delete avatar file
-      const avatarFileName = user.avatar?.split("/avatars/")[1];
+      // const avatarFileName = user.avatar?.split("/avatars/")[1];
 
-      const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
+      // const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
 
-      if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
-        fs.unlinkSync(avatarDir + avatarFileName);
-      }
+      // if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
+      //   fs.unlinkSync(avatarDir + avatarFileName);
+      // }
 
-      user.avatar = "";
+      // Delete avatar form cloudinary
+      cloudinary.uploader.destroy(
+        user.avatarPublicId || "",
+        async (err, result) => {
+          if (err) {
+            return res
+              .status(400)
+              .json({ status: "error", message: err.message });
+          }
+          user.avatar = "";
 
-      // Save
-      await user.save();
+          // Save
+          await user.save();
 
-      return res.status(200).json({
-        status: "success",
-        message: "Avatar removed",
-      });
+          return res.status(200).json({
+            status: "success",
+            message: "Avatar removed",
+          });
+        }
+      );
     } catch (err) {
       res.status(400).json({ status: "error", message: err.message });
     }
@@ -193,13 +216,13 @@ module.exports = (router) => {
           });
         }
 
-        const base64ToArray = base64Avatar.split(";base64,");
-        const imageData = base64ToArray[1];
-        const extension = "png";
-        const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
-        const imagePath =
-          path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
-        fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
+        // const base64ToArray = base64Avatar.split(";base64,");
+        // const imageData = base64ToArray[1];
+        // const extension = "png";
+        // const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
+        // const imagePath =
+        //   path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
+        // fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
 
         // Get current user
         const user = await User.findOne({ _id: userId });
@@ -211,18 +234,33 @@ module.exports = (router) => {
           });
         }
 
-        // Update avatar
-        user.avatar = `${req.protocol}://${req.get(
-          "host"
-        )}/api/uploads/avatars/${fileName}`;
+        // Upload avatar to cloudinary
+        cloudinary.uploader.upload(
+          base64Avatar,
+          {
+            folder: "Avatar",
+          },
+          async (err, result) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: "error", message: err.message });
+            }
+            // Update avatar
+            user.avatar = result?.url;
 
-        // Save
-        await user.save();
+            // Update avatar public id
+            user.avatarPublicId = result?.public_id;
 
-        return res.status(200).json({
-          status: "success",
-          message: "Avatar uploaded",
-        });
+            // Save
+            await user.save();
+
+            return res.status(200).json({
+              status: "success",
+              message: "Avatar uploaded",
+            });
+          }
+        );
       } catch (err) {
         res.status(400).json({ status: "error", message: err.message });
       }
@@ -258,23 +296,34 @@ module.exports = (router) => {
         }
 
         // Delete avatar file
-        const avatarFileName = user.avatar?.split("/avatars/")[1];
+        // const avatarFileName = user.avatar?.split("/avatars/")[1];
 
-        const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
+        // const avatarDir = path.join(__dirname, "../../tmp/uploads/avatars/");
 
-        if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
-          fs.unlinkSync(avatarDir + avatarFileName);
-        }
+        // if (avatarFileName && fs.existsSync(avatarDir + avatarFileName)) {
+        //   fs.unlinkSync(avatarDir + avatarFileName);
+        // }
 
-        user.avatar = "";
+        // Delete avatar form cloudinary
+        cloudinary.uploader.destroy(
+          user.avatarPublicId || "",
+          async (err, result) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: "error", message: err.message });
+            }
+            user.avatar = "";
 
-        // Save
-        await user.save();
+            // Save
+            await user.save();
 
-        return res.status(200).json({
-          status: "success",
-          message: "Avatar removed",
-        });
+            return res.status(200).json({
+              status: "success",
+              message: "Avatar removed",
+            });
+          }
+        );
       } catch (err) {
         res.status(400).json({ status: "error", message: err.message });
       }

@@ -4,6 +4,7 @@ const User = require("../../models/user");
 const { isAuthenticated, isAdmin } = require("../../middleware/auth");
 const Tutor = require("../../models/tutor");
 const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -30,12 +31,13 @@ function checkFileType(file, cb) {
 }
 
 const upload = multer({
+  // storage: multer.memoryStorage(),
   storage,
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
   limits: {
-    fileSize: 1024 * 1024 * 10,
+    fileSize: 1024 * 1024 * 5,
   },
 });
 
@@ -44,7 +46,7 @@ module.exports = (router) => {
   router.post(
     "/certificates",
     isAuthenticated,
-    upload.array("certificates", 10),
+    upload.array("certificates", 3),
     async (req, res) => {
       const { userId, email } = req.user;
 
@@ -96,27 +98,49 @@ module.exports = (router) => {
         });
       }
 
-      teachingCertificates = teachingCertificates.map((file) => {
-        return {
-          originalname: file.originalname,
-          filename: file.filename,
-          size: file.size,
-          url: `${req.protocol}://${req.get("host")}/api/uploads/certificates/${
-            file.filename
-          }`,
-        };
-      });
+      let tutorTeachingCertificates = tutor.teachingCertificates || [];
 
-      //  Update certificates
-      tutor.teachingCertificates = teachingCertificates;
+      teachingCertificates.forEach((file) => {
+        // Upload avatar to cloudinary
+        cloudinary.uploader.upload(
+          file.path,
+          {
+            folder: "Certificates",
+          },
+          async (err, result) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: "error", message: err.message });
+            }
 
-      // Save
-      await tutor.save();
+            const uploadedCertificate = {
+              originalname: file.originalname,
+              filename: file.filename,
+              size: file.size,
+              url: result?.url,
+              publicId: result?.public_id,
+            };
 
-      return res.status(200).json({
-        status: "success",
-        message: "Certificates uploaded",
-        data: tutor.teachingCertificates,
+            // Update tutor certificates
+            tutorTeachingCertificates = [
+              ...tutorTeachingCertificates,
+              uploadedCertificate,
+            ];
+
+            //  Update certificates
+            tutor.teachingCertificates = tutorTeachingCertificates;
+
+            // Save
+            await tutor.save();
+
+            return res.status(200).json({
+              status: "success",
+              message: "Certificates uploaded",
+              data: tutor.teachingCertificates,
+            });
+          }
+        );
       });
     }
   );
@@ -137,7 +161,7 @@ module.exports = (router) => {
   });
 
   // Delete certificate
-  router.delete("/certificates/:id", isAuthenticated, async (req, res) => {
+  router.delete("/certificates", isAuthenticated, async (req, res) => {
     try {
       const { userId, email } = req.user;
 
@@ -147,6 +171,9 @@ module.exports = (router) => {
           message: "Invalid token",
         });
       }
+
+      // Certificate id
+      const publicId = req.query.publicId;
 
       // Get current user
       const user = await User.findOne({ email });
@@ -177,12 +204,9 @@ module.exports = (router) => {
         });
       }
 
-      // Certificate id
-      const certificateId = req.params.id;
-
       // Get delete certificate
       const deleteCertificate = tutor.teachingCertificates.find(
-        (certificate) => certificate["_id"] == certificateId
+        (certificate) => certificate["publicId"] == publicId
       );
 
       if (!deleteCertificate) {
@@ -192,26 +216,34 @@ module.exports = (router) => {
         });
       }
 
-      const certificateDir = path.join(
-        __dirname,
-        "../../tmp/uploads/certificates/"
-      );
+      // const certificateDir = path.join(
+      //   __dirname,
+      //   "../../tmp/uploads/certificates/"
+      // );
 
-      if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
-        fs.unlinkSync(certificateDir + deleteCertificate.filename);
-      }
+      // if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
+      //   fs.unlinkSync(certificateDir + deleteCertificate.filename);
+      // }
 
-      // Delete certificate
-      tutor.teachingCertificates = tutor.teachingCertificates.filter(
-        (certificate) => certificate["_id"] != certificateId
-      );
+      // Delete avatar form cloudinary
+      cloudinary.uploader.destroy(publicId || "", async (err, result) => {
+        if (err) {
+          return res
+            .status(400)
+            .json({ status: "error", message: err.message });
+        }
+        // Delete certificate
+        tutor.teachingCertificates = tutor.teachingCertificates.filter(
+          (certificate) => certificate["publicId"] != publicId
+        );
 
-      // Save
-      await tutor.save();
+        // Save
+        await tutor.save();
 
-      return res.status(200).json({
-        status: "success",
-        message: "Certificate removed",
+        return res.status(200).json({
+          status: "success",
+          message: "Certificate removed",
+        });
       });
     } catch (err) {
       res.status(400).json({ status: "error", message: err.message });
@@ -225,7 +257,7 @@ module.exports = (router) => {
     "/users/certificates/:id",
     isAuthenticated,
     isAdmin,
-    upload.array("certificates", 10),
+    upload.array("certificates", 3),
     async (req, res) => {
       // Get user id
       const userId = req.params.id;
@@ -270,28 +302,49 @@ module.exports = (router) => {
           message: "No documents",
         });
       }
+      let tutorTeachingCertificates = tutor.teachingCertificates || [];
 
-      teachingCertificates = teachingCertificates.map((file) => {
-        return {
-          originalname: file.originalname,
-          filename: file.filename,
-          size: file.size,
-          url: `${req.protocol}://${req.get("host")}/api/uploads/certificates/${
-            file.filename
-          }`,
-        };
-      });
+      teachingCertificates.forEach((file) => {
+        // Upload avatar to cloudinary
+        cloudinary.uploader.upload(
+          file.path,
+          {
+            folder: "Certificates",
+          },
+          async (err, result) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: "error", message: err.message });
+            }
 
-      //  Update certificates
-      tutor.teachingCertificates = teachingCertificates;
+            const uploadedCertificate = {
+              originalname: file.originalname,
+              filename: file.filename,
+              size: file.size,
+              url: result?.url,
+              publicId: result?.public_id,
+            };
 
-      // Save
-      await tutor.save();
+            // Update tutor certificates
+            tutorTeachingCertificates = [
+              ...tutorTeachingCertificates,
+              uploadedCertificate,
+            ];
 
-      return res.status(200).json({
-        status: "success",
-        message: "Certificates uploaded",
-        data: tutor.teachingCertificates,
+            //  Update certificates
+            tutor.teachingCertificates = tutorTeachingCertificates;
+
+            // Save
+            await tutor.save();
+
+            return res.status(200).json({
+              status: "success",
+              message: "Certificates uploaded",
+              data: tutor.teachingCertificates,
+            });
+          }
+        );
       });
     }
   );
@@ -300,7 +353,7 @@ module.exports = (router) => {
   // @route   PUT /api/users/certificates/:id
   // @access  Private/Admin
   router.delete(
-    "/users/certificates/:userId/:id",
+    "/users/certificates/:userId",
     isAuthenticated,
     isAdmin,
     async (req, res) => {
@@ -325,6 +378,9 @@ module.exports = (router) => {
           });
         }
 
+        // Certificate id
+        const publicId = req.query.publicId;
+
         // Find student profile
         const tutor = await Tutor.findOne({ userId: userId });
 
@@ -336,12 +392,9 @@ module.exports = (router) => {
           });
         }
 
-        // Certificate id
-        const certificateId = req.params.id;
-
         // Get delete certificate
         const deleteCertificate = tutor.teachingCertificates.find(
-          (certificate) => certificate["_id"] == certificateId
+          (certificate) => certificate["publicId"] == publicId
         );
 
         if (!deleteCertificate) {
@@ -351,26 +404,34 @@ module.exports = (router) => {
           });
         }
 
-        const certificateDir = path.join(
-          __dirname,
-          "../../tmp/uploads/certificates/"
-        );
+        // const certificateDir = path.join(
+        //   __dirname,
+        //   "../../tmp/uploads/certificates/"
+        // );
 
-        if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
-          fs.unlinkSync(certificateDir + deleteCertificate.filename);
-        }
+        // if (fs.existsSync(certificateDir + deleteCertificate.filename)) {
+        //   fs.unlinkSync(certificateDir + deleteCertificate.filename);
+        // }
 
-        // Delete certificate
-        tutor.teachingCertificates = tutor.teachingCertificates.filter(
-          (certificate) => certificate["_id"] != certificateId
-        );
+        // Delete avatar form cloudinary
+        cloudinary.uploader.destroy(publicId || "", async (err, result) => {
+          if (err) {
+            return res
+              .status(400)
+              .json({ status: "error", message: err.message });
+          }
+          // Delete certificate
+          tutor.teachingCertificates = tutor.teachingCertificates.filter(
+            (certificate) => certificate["publicId"] != publicId
+          );
 
-        // Save
-        await tutor.save();
+          // Save
+          await tutor.save();
 
-        return res.status(200).json({
-          status: "success",
-          message: "Certificate removed",
+          return res.status(200).json({
+            status: "success",
+            message: "Certificate removed",
+          });
         });
       } catch (err) {
         res.status(400).json({ status: "error", message: err.message });

@@ -18,6 +18,7 @@ const userSchema = new Schema(
     lastName: { type: String },
     name: { type: String },
     avatar: { type: String },
+    avatarPublicId: { type: String },
     tutorProfile: {
       type: Schema.Types.ObjectId,
       ref: "Tutor",

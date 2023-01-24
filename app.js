@@ -4,17 +4,24 @@ const api = require("./api");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
 const cors = require("cors");
+const cloudinary = require("cloudinary").v2;
 const { connectDB } = require("./config/db");
 const config = process.env;
 
 dotenv.config();
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 connectDB();
 
 app.set("port", config.API_PORT || 1996);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 app.use(cors());
 
