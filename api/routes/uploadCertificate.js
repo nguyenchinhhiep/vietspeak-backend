@@ -66,7 +66,7 @@ module.exports = (router) => {
   router.post(
     "/certificates",
     isAuthenticated,
-    upload.array("certificates", 3),
+    upload.array("certificates", 2),
     async (req, res) => {
       try {
         const { userId, email } = req.user;
