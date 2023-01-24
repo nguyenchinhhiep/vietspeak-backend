@@ -42,6 +42,25 @@ const upload = multer({
   },
 });
 
+const uploadCertificateStream = (file) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "Certificates",
+      },
+      async (err, result) => {
+        if (err) {
+          reject(err);
+        }
+
+        resolve(result);
+      }
+    );
+
+    streamifier.createReadStream(file.buffer).pipe(uploadStream);
+  });
+};
+
 module.exports = (router) => {
   // Upload certificates
   router.post(
@@ -49,100 +68,88 @@ module.exports = (router) => {
     isAuthenticated,
     upload.array("certificates", 3),
     async (req, res) => {
-      const { userId, email } = req.user;
+      try {
+        const { userId, email } = req.user;
 
-      if (!email || !userId) {
-        return res.status(400).json({
-          status: "error",
-          message: "Invalid token",
+        if (!email || !userId) {
+          return res.status(400).json({
+            status: "error",
+            message: "Invalid token",
+          });
+        }
+
+        // Get current user
+        const user = await User.findOne({ email });
+
+        // Check user exists
+        if (!user) {
+          return res.status(404).json({
+            status: "error",
+            message: "User not found",
+          });
+        }
+
+        // Check user type
+        if (user.userType !== "Tutor") {
+          return res.status(401).json({
+            status: "error",
+            message: "Not authorized as an tutor",
+          });
+        }
+
+        // Find tutor profile
+        const tutor = await Tutor.findOne({ userId: userId });
+
+        // Check tutor exists
+        if (!tutor) {
+          return res.status(404).json({
+            status: "error",
+            message: "Tutor not found",
+          });
+        }
+
+        // Get files
+        let teachingCertificates = req.files || [];
+
+        // Check files
+        if (!teachingCertificates || teachingCertificates.length === 0) {
+          return res.status(400).json({
+            status: "error",
+            message: "No documents",
+          });
+        }
+
+        let tutorTeachingCertificates = tutor.teachingCertificates || [];
+
+        for (const file of teachingCertificates) {
+          const result = await uploadCertificateStream(file);
+
+          const uploadedCertificate = {
+            originalname: file.originalname,
+            filename: file.filename,
+            size: file.size,
+            url: result?.url,
+            publicId: result?.public_id,
+          };
+
+          // Update tutor certificates
+          tutorTeachingCertificates.push(uploadedCertificate);
+
+          //  Update certificates
+          tutor.teachingCertificates = tutorTeachingCertificates;
+        }
+
+        // Save
+        await tutor.save();
+
+        return res.status(200).json({
+          status: "success",
+          message: "Certificates uploaded",
+          data: tutor.teachingCertificates,
         });
+      } catch (err) {
+        res.status(400).json({ status: "error", message: err.message });
       }
-
-      // Get current user
-      const user = await User.findOne({ email });
-
-      // Check user exists
-      if (!user) {
-        return res.status(404).json({
-          status: "error",
-          message: "User not found",
-        });
-      }
-
-      // Check user type
-      if (user.userType !== "Tutor") {
-        return res.status(401).json({
-          status: "error",
-          message: "Not authorized as an tutor",
-        });
-      }
-
-      // Find tutor profile
-      const tutor = await Tutor.findOne({ userId: userId });
-
-      // Check tutor exists
-      if (!tutor) {
-        return res.status(404).json({
-          status: "error",
-          message: "Tutor not found",
-        });
-      }
-
-      // Get files
-      let teachingCertificates = req.files || [];
-
-      // Check files
-      if (!teachingCertificates || teachingCertificates.length === 0) {
-        return res.status(400).json({
-          status: "error",
-          message: "No documents",
-        });
-      }
-
-      let tutorTeachingCertificates = tutor.teachingCertificates || [];
-
-      teachingCertificates.forEach((file) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: "Certificates",
-          },
-          async (err, result) => {
-            if (err) {
-              return res
-                .status(400)
-                .json({ status: "error", message: err.message });
-            }
-
-            const uploadedCertificate = {
-              originalname: file.originalname,
-              filename: file.filename,
-              size: file.size,
-              url: result?.url,
-              publicId: result?.public_id,
-            };
-
-            // Update tutor certificates
-            tutorTeachingCertificates = [
-              ...tutorTeachingCertificates,
-              uploadedCertificate,
-            ];
-
-            //  Update certificates
-            tutor.teachingCertificates = tutorTeachingCertificates;
-
-            // Save
-            await tutor.save();
-
-            return res.status(200).json({
-              status: "success",
-              message: "Certificates uploaded",
-              data: tutor.teachingCertificates,
-            });
-          }
-        );
-
-        streamifier.createReadStream(file.buffer).pipe(uploadStream);
-      });
     }
   );
 
@@ -260,93 +267,81 @@ module.exports = (router) => {
     isAdmin,
     upload.array("certificates", 3),
     async (req, res) => {
-      // Get user id
-      const userId = req.params.id;
+      try {
+        // Get user id
+        const userId = req.params.id;
 
-      // Get current user
-      const user = await User.findOne({ _id: userId });
+        // Get current user
+        const user = await User.findOne({ _id: userId });
 
-      // Check user exists
-      if (!user) {
-        return res.status(404).json({
-          status: "error",
-          message: "User not found",
+        // Check user exists
+        if (!user) {
+          return res.status(404).json({
+            status: "error",
+            message: "User not found",
+          });
+        }
+
+        // Check user type
+        if (user.userType !== "Tutor") {
+          return res.status(401).json({
+            status: "error",
+            message: "Only tutor can upload certificates",
+          });
+        }
+
+        // Find tutor profile
+        const tutor = await Tutor.findOne({ userId: userId });
+
+        // Check tutor exists
+        if (!tutor) {
+          return res.status(404).json({
+            status: "error",
+            message: "Tutor not found",
+          });
+        }
+
+        // Get files
+        let teachingCertificates = req.files || [];
+
+        // Check files
+        if (!teachingCertificates || teachingCertificates.length === 0) {
+          return res.status(400).json({
+            status: "error",
+            message: "No documents",
+          });
+        }
+        let tutorTeachingCertificates = tutor.teachingCertificates || [];
+
+        for (const file of teachingCertificates) {
+          const result = await uploadCertificateStream(file);
+
+          const uploadedCertificate = {
+            originalname: file.originalname,
+            filename: file.filename,
+            size: file.size,
+            url: result?.url,
+            publicId: result?.public_id,
+          };
+
+          // Update tutor certificates
+          tutorTeachingCertificates.push(uploadedCertificate);
+
+          //  Update certificates
+          tutor.teachingCertificates = tutorTeachingCertificates;
+        }
+
+        // Save
+        await tutor.save();
+
+        return res.status(200).json({
+          status: "success",
+          message: "Certificates uploaded",
+          data: tutor.teachingCertificates,
         });
+      } catch (err) {
+        res.status(400).json({ status: "error", message: err.message });
       }
-
-      // Check user type
-      if (user.userType !== "Tutor") {
-        return res.status(401).json({
-          status: "error",
-          message: "Only tutor can upload certificates",
-        });
-      }
-
-      // Find tutor profile
-      const tutor = await Tutor.findOne({ userId: userId });
-
-      // Check tutor exists
-      if (!tutor) {
-        return res.status(404).json({
-          status: "error",
-          message: "Tutor not found",
-        });
-      }
-
-      // Get files
-      let teachingCertificates = req.files || [];
-
-      // Check files
-      if (!teachingCertificates || teachingCertificates.length === 0) {
-        return res.status(400).json({
-          status: "error",
-          message: "No documents",
-        });
-      }
-      let tutorTeachingCertificates = tutor.teachingCertificates || [];
-
-      teachingCertificates.forEach((file) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: "Certificates",
-          },
-          async (err, result) => {
-            if (err) {
-              return res
-                .status(400)
-                .json({ status: "error", message: err.message });
-            }
-
-            const uploadedCertificate = {
-              originalname: file.originalname,
-              filename: file.filename,
-              size: file.size,
-              url: result?.url,
-              publicId: result?.public_id,
-            };
-
-            // Update tutor certificates
-            tutorTeachingCertificates = [
-              ...tutorTeachingCertificates,
-              uploadedCertificate,
-            ];
-
-            //  Update certificates
-            tutor.teachingCertificates = tutorTeachingCertificates;
-
-            // Save
-            await tutor.save();
-
-            return res.status(200).json({
-              status: "success",
-              message: "Certificates uploaded",
-              data: tutor.teachingCertificates,
-            });
-          }
-        );
-
-        streamifier.createReadStream(file.buffer).pipe(uploadStream);
-      });
     }
   );
 
