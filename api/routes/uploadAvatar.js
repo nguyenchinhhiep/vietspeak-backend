@@ -3,6 +3,7 @@ const multer = require("multer");
 const User = require("../../models/user");
 const { isAuthenticated, isAdmin } = require("../../middleware/auth");
 const fs = require("fs");
+const cloudinary = require("./../../config/cloudinary");
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -64,14 +65,19 @@ module.exports = (router) => {
           });
         }
 
-        const base64ToArray = base64Avatar.split(";base64,");
-        const imageData = base64ToArray[1];
-        const extension = "png";
-        const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
+        // const base64ToArray = base64Avatar.split(";base64,");
+        // const imageData = base64ToArray[1];
+        // const extension = "png";
+        // const fileName = ((new Date().getTime() / 1000) | 0) + "." + extension;
 
-        const imagePath =
-          path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
-        fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
+        // const imagePath =
+        //   path.join(__dirname, "../../tmp/uploads/avatars/") + fileName;
+        // fs.writeFileSync(imagePath, imageData, { encoding: "base64" });
+
+        // Upload avatar to cloudinary
+        const uploadedAvatar = await cloudinary.upload(base64Avatar, "Avatar");
+
+        console.log(uploadedAvatar);
 
         // Get current user
         const user = await User.findOne({ email });
@@ -84,9 +90,7 @@ module.exports = (router) => {
         }
 
         // Update avatar
-        user.avatar = `${req.protocol}://${req.get(
-          "host"
-        )}/api/uploads/avatars/${fileName}`;
+        user.avatar = uploadedAvatar.url;
 
         // Save
         await user.save();

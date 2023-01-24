@@ -1,0 +1,27 @@
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+module.exports = {
+  upload: (file, folder) => {
+    return new Promise((resolve) => {
+      cloudinary.uploader.upload(
+        file,
+        {
+          resource_type: "auto",
+          folder: folder,
+        },
+        (result) => {
+          resolve({
+            url: result?.url,
+            id: result?.public_id,
+          });
+        }
+      );
+    });
+  },
+};
